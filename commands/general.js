@@ -9,22 +9,30 @@ function formatDuration(seconds) {
   const minutes = Math.floor(remaining / 60);
   const secs = remaining % 60;
   const parts = [];
+
   if (days) parts.push(days + "d");
   if (hours) parts.push(hours + "h");
   if (minutes) parts.push(minutes + "m");
   if (secs || !parts.length) parts.push(secs + "s");
+
   return parts.join(" ");
 }
 
 function messageTimestampMs(message) {
   const raw = message && message.messageTimestamp;
-  const value = raw && typeof raw.toNumber === "function" ? raw.toNumber() : Number(raw);
+  const value = raw && typeof raw.toNumber === "function"
+    ? raw.toNumber()
+    : Number(raw);
+
   if (!Number.isFinite(value) || value <= 0) return null;
   return value > 1000000000000 ? value : value * 1000;
 }
 
 function ownerNumber(config) {
-  const owners = Array.isArray(config.ownerNumbers) ? config.ownerNumbers : [];
+  const owners = Array.isArray(config.ownerNumbers)
+    ? config.ownerNumbers
+    : [];
+
   return String(owners[0] || "").replace(/\D/g, "");
 }
 
@@ -33,28 +41,24 @@ const commands = [
     name: "menu",
     aliases: ["helpme"],
     category: "General",
-    description: "Show the branded SPARK MD menu and available command sections.",
+    description: "Show bot menu.",
     run: async ctx => {
       const menu = buildMenu({
         commands: ctx.commands,
         config: ctx.config,
-        theme: ctx.theme
+        theme: ctx.theme,
+        mode: ctx.mode,
+        uptime: process.uptime()
       });
 
       if (ctx.config.imageUrl) {
         try {
           await ctx.send({
             image: { url: ctx.config.imageUrl },
-            caption:
-              "⚡ *SPARK MD — WhatsApp Bot by Benfei Tech*\n" +
-              "🌐 Official pairing portal: " + ctx.config.botUrl + "\n" +
-              "⚡ Powered by Benfei Tech"
+            caption: "⚡ *𝗦𝗣𝗔𝗥𝗞 𝗠𝗗*\nPowered by Benfei Tech"
           });
         } catch (error) {
-          console.warn(
-            "SPARK MD menu artwork could not be sent; using the text menu:",
-            error?.message || error
-          );
+          console.warn("SPARK MD artwork could not be sent:", error?.message || error);
         }
       }
 
@@ -65,30 +69,29 @@ const commands = [
   {
     name: "help",
     category: "General",
-    description: "List registered commands and their descriptions.",
+    description: "Show available commands.",
     run: async ctx => {
       const rows = (ctx.commands || [])
         .filter(command => !command.hidden)
         .slice()
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map(command =>
-          ctx.config.prefix + command.name +
-          (command.description ? " — " + command.description : "")
-        );
-
-      const header =
-        "┌━━〔 📚 sᴘᴀʀᴋ ᴍᴅ ʜᴇʟᴘ 〕━━┐\n" +
-        "│ ❖ " + rows.length + " ʀᴇɢɪsᴛᴇʀᴇᴅ ᴄᴏᴍᴍᴀɴᴅs\n\n";
+        .map(command => ctx.config.prefix + command.name);
 
       const chunks = [];
-      let current = header;
+      let current =
+        "━━━━━━ ⟦ 𝗦𝗣𝗔𝗥𝗞 𝗠𝗗 · 𝗛𝗘𝗟𝗣 ⟧ ━━━━━━\n" +
+        " ❯ Commands : " + rows.length +
+        "\n━━━━━━━━━━━━━━━━━━━━━━\n\n";
 
       for (const row of rows) {
-        if (current.length + row.length + 1 > 3300) {
+        const line = " ⌲ " + row + "\n";
+
+        if (current.length + line.length > 3300) {
           chunks.push(current.trimEnd());
-          current = "┌━━〔 📚 sᴘᴀʀᴋ ᴍᴅ ʜᴇʟᴘ · ᴄᴏɴᴛɪɴᴜᴇᴅ 〕━━┐\n\n";
+          current = "━━━━━━ ⟦ 𝗦𝗣𝗔𝗥𝗞 𝗠𝗗 · 𝗛𝗘𝗟𝗣 ⟧ ━━━━━━\n\n";
         }
-        current += "│ ├› " + row + "\n";
+
+        current += line;
       }
 
       if (current.trim()) chunks.push(current.trimEnd());
@@ -102,7 +105,7 @@ const commands = [
   {
     name: "ping",
     category: "General",
-    description: "Check bot responsiveness and estimated message response time.",
+    description: "Check bot response.",
     run: async ctx => {
       const timestamp = messageTimestampMs(ctx.msg);
       const responseMs = timestamp === null
@@ -110,12 +113,11 @@ const commands = [
         : Math.max(0, Date.now() - timestamp);
 
       await ctx.reply([
-        "┌━━〔 🏓 sᴘᴀʀᴋ ᴍᴅ · ᴘᴏɴɢ 〕━━┐",
-        "│ ❖ Status: " + (ctx.connectionOpen ? "Online 🟢" : "Connecting 🟡"),
-        "│ ❖ Response: " + (responseMs === null ? "Unavailable" : responseMs + " ms"),
-        "│ ❖ Uptime: " + formatDuration(process.uptime()),
-        "│ ❖ Version: " + ctx.config.version,
-        "└━━━━━━━━━━━━━━━━━━━━┘"
+        "━━━━━━ ⟦ 𝗦𝗣𝗔𝗥𝗞 𝗠𝗗 · 𝗣𝗢𝗡𝗚 ⟧ ━━━━━━",
+        " ❯ Status   : " + (ctx.connectionOpen ? "Online 🟢" : "Connecting 🟡"),
+        " ❯ Response : " + (responseMs === null ? "N/A" : responseMs + " ms"),
+        " ❯ Uptime   : " + formatDuration(process.uptime()),
+        "━━━━━━━━━━━━━━━━━━━━━━"
       ].join("\n"));
     }
   },
@@ -124,54 +126,52 @@ const commands = [
     name: "alive",
     aliases: ["uptime"],
     category: "General",
-    description: "Show bot status, mode and uptime.",
+    description: "Show bot status.",
     run: async ctx => {
-      await ctx.reply(
-        "⚡ *sᴘᴀʀᴋ ᴍᴅ*\n" +
-        "│ ❖ Status: " + (ctx.connectionOpen ? "Online 🟢" : "Connecting 🟡") +
-        "\n│ ❖ Mode: " + String(ctx.mode || "public").toUpperCase() +
-        "\n│ ❖ Uptime: " + formatDuration(process.uptime()) +
-        "\n└━━━━━━━━━━━━┘" +
-        "\n\n⚡ Powered by " + ctx.config.ownerName
-      );
+      await ctx.reply([
+        "━━━━━━ ⟦ 𝗦𝗣𝗔𝗥𝗞 𝗠𝗗 ⟧ ━━━━━━",
+        " ❯ Status : " + (ctx.connectionOpen ? "Online 🟢" : "Connecting 🟡"),
+        " ❯ Mode   : " + String(ctx.mode || "public").toUpperCase(),
+        " ❯ Uptime : " + formatDuration(process.uptime()),
+        "━━━━━━━━━━━━━━━━━━━━━━"
+      ].join("\n"));
     }
   },
 
   {
     name: "owner",
     category: "General",
-    description: "Show Benfei Tech owner details.",
+    description: "Show bot owner.",
     run: async ctx => {
       const number = ownerNumber(ctx.config);
 
-      await ctx.reply(
-        "┌━━〔 👑 ᴏᴡɴᴇʀ ɪɴғᴏ 〕━━┐\n" +
-        "│ ❖ Name: " + ctx.config.ownerName +
-        (number ? "\n│ ❖ Number: +" + number : "") +
-        "\n└━━━━━━━━━━━━┘"
-      );
+      await ctx.reply([
+        "━━━━━━ ⟦ 𝗢𝗪𝗡𝗘𝗥 ⟧ ━━━━━━",
+        " ❯ Name   : " + ctx.config.ownerName,
+        ...(number ? [" ❯ Number : +" + number] : []),
+        "━━━━━━━━━━━━━━━━━━━━━━"
+      ].join("\n"));
     }
   },
 
   {
     name: "support",
     category: "General",
-    description: "Show support guidance for SPARK MD.",
+    description: "Show support details.",
     run: async ctx => {
-      await ctx.reply(
-        "┌━━〔 🛟 sᴘᴀʀᴋ ᴍᴅ sᴜᴘᴘᴏʀᴛ 〕━━┐\n" +
-        "│ ❖ For setup help or bug reports,\n" +
-        "│ contact " + ctx.config.ownerName + ".\n" +
-        "└━━━━━━━━━━━━┘\n\n" +
-        "📂 GitHub: https://github.com/Benfeitech/FEI-XMD"
-      );
+      await ctx.reply([
+        "━━━━━━ ⟦ 𝗦𝗣𝗔𝗥𝗞 𝗠𝗗 · 𝗦𝗨𝗣𝗣𝗢𝗥𝗧 ⟧ ━━━━━━",
+        " ❯ Owner  : " + ctx.config.ownerName,
+        " ❯ GitHub : github.com/Benfeitech/FEI-XMD",
+        "━━━━━━━━━━━━━━━━━━━━━━"
+      ].join("\n"));
     }
   },
 
   {
     name: "time",
     category: "General",
-    description: "Show the current server time in Nigeria.",
+    description: "Show Nigeria time.",
     run: async ctx => {
       const value = new Intl.DateTimeFormat("en-NG", {
         timeZone: "Africa/Lagos",
@@ -181,14 +181,14 @@ const commands = [
         hour12: true
       }).format(new Date());
 
-      await ctx.reply("🕒 ɴɪɢᴇʀɪᴀ ᴛɪᴍᴇ: " + value);
+      await ctx.reply(" ❯ 🇳🇬 Nigeria Time : " + value);
     }
   },
 
   {
     name: "date",
     category: "General",
-    description: "Show the current date in Nigeria.",
+    description: "Show Nigeria date.",
     run: async ctx => {
       const value = new Intl.DateTimeFormat("en-NG", {
         timeZone: "Africa/Lagos",
@@ -198,23 +198,22 @@ const commands = [
         year: "numeric"
       }).format(new Date());
 
-      await ctx.reply("📅 ᴅᴀᴛᴇ ɪɴ ɴɪɢᴇʀɪᴀ: " + value);
+      await ctx.reply(" ❯ 📅 Date : " + value);
     }
   },
 
   {
     name: "version",
     category: "General",
-    description: "Show SPARK MD version and connection status.",
+    description: "Show bot version.",
     run: async ctx => {
-      await ctx.reply(
-        "┌━━〔 ⚡ sᴘᴀʀᴋ ᴍᴅ ɪɴғᴏ 〕━━┐\n" +
-        "│ ❖ Version: " + ctx.config.name + " v" + ctx.config.version +
-        "\n│ ❖ Status: " + (ctx.connectionOpen ? "Online 🟢" : "Connecting 🟡") +
-        "\n│ ❖ Mode: " + String(ctx.mode || "public").toUpperCase() +
-        "\n│ ❖ Baileys: Official WhiskeySockets npm package" +
-        "\n└━━━━━━━━━━━━━━━━━━━━┘"
-      );
+      await ctx.reply([
+        "━━━━━━ ⟦ 𝗦𝗣𝗔𝗥𝗞 𝗠𝗗 ⟧ ━━━━━━",
+        " ❯ Version : " + ctx.config.version,
+        " ❯ Status  : " + (ctx.connectionOpen ? "Online 🟢" : "Connecting 🟡"),
+        " ❯ Mode    : " + String(ctx.mode || "public").toUpperCase(),
+        "━━━━━━━━━━━━━━━━━━━━━━"
+      ].join("\n"));
     }
   },
 
@@ -222,29 +221,29 @@ const commands = [
     name: "jid",
     aliases: ["id"],
     category: "General",
-    description: "Show the current chat and message sender IDs.",
+    description: "Show chat IDs.",
     run: async ctx => {
-      await ctx.reply(
-        "┌━━〔 💬 ᴄʜᴀᴛ ɪɴғᴏ 〕━━┐\n" +
-        "│ ❖ Chat ID: " + ctx.jid +
-        "\n│ ❖ Sender ID: " + (ctx.senderJid || "Unavailable") +
-        "\n└━━━━━━━━━━━━┘"
-      );
+      await ctx.reply([
+        "━━━━━━ ⟦ 𝗖𝗛𝗔𝗧 𝗜𝗡𝗙𝗢 ⟧ ━━━━━━",
+        " ❯ Chat   : " + ctx.jid,
+        " ❯ Sender : " + (ctx.senderJid || "Unavailable"),
+        "━━━━━━━━━━━━━━━━━━━━━━"
+      ].join("\n"));
     }
   },
 
   {
     name: "whoami",
     category: "General",
-    description: "Show your WhatsApp sender information.",
+    description: "Show sender information.",
     run: async ctx => {
-      await ctx.reply(
-        "┌━━〔 👤 ᴜsᴇʀ ɪɴғᴏ 〕━━┐\n" +
-        "│ ❖ Name: " + (ctx.msg?.pushName || "Unknown") +
-        "\n│ ❖ Your ID: " + (ctx.senderJid || "Unavailable") +
-        "\n│ ❖ Owner: " + (ctx.owner ? "Yes ✅" : "No ❌") +
-        "\n└━━━━━━━━━━━━┘"
-      );
+      await ctx.reply([
+        "━━━━━━ ⟦ 𝗨𝗦𝗘𝗥 𝗜𝗡𝗙𝗢 ⟧ ━━━━━━",
+        " ❯ Name  : " + (ctx.msg?.pushName || "Unknown"),
+        " ❯ ID    : " + (ctx.senderJid || "Unavailable"),
+        " ❯ Owner : " + (ctx.owner ? "Yes" : "No"),
+        "━━━━━━━━━━━━━━━━━━━━━━"
+      ].join("\n"));
     }
   }
 ];
